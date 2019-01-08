@@ -139,11 +139,7 @@ void client::destroy(client* x)
   // are connected to node.about_to_be_deleted
   // x->unregister_children();
 
-  object_free((t_object*)x->m_poll_clock);
-
-  if (x->m_device)
-    delete (x->m_device);
-  x->m_device = nullptr;
+  disconnect(x);
   outlet_delete(x->m_dumpout);
   ossia_max::instance().clients.remove_all(x);
 #if OSSIA_MAX_AUTOREGISTER
@@ -215,6 +211,7 @@ void client::connect(client* x, t_symbol*, int argc, t_atom* argv)
          && protocol_name != "minuit"
          && protocol_name != "osc")
     {
+      // Connect with device name
       ossia::string_view name;
 
       if ( x->m_looking_for )
@@ -319,7 +316,8 @@ void client::connect(client* x, t_symbol*, int argc, t_atom* argv)
     {
       argc--;
       argv++;
-      std::string wsurl = "ws://127.0.0.1:5678";
+      std::string wsurl = "ws://" + oscq_settings.host + ":"
+                          + std::to_string(oscq_settings.port);
       if (argc == 1
           && argv[0].a_type == A_SYM)
       {
@@ -399,6 +397,7 @@ void client::connect(client* x, t_symbol*, int argc, t_atom* argv)
   if(x->m_device)
   {
     x->connect_slots();
+    ossia_max::instance().start_timers();
     client::update(x);
   }
 }
@@ -522,9 +521,6 @@ void client::unregister_children()
 
 void client::update(client* x)
 {
-  // TODO use ossia::net::oscquery::oscquery_mirror_protocol::run_commands()
-  // for OSC Query
-
   if (x->m_device)
   {
     x->m_device->get_protocol().update(*x->m_device);
@@ -550,6 +546,7 @@ void client::disconnect(client* x)
     delete x->m_device;
     x->m_device = nullptr;
     x->m_oscq_protocol = nullptr;
+    ossia_max::instance().stop_timers();
   }
 }
 

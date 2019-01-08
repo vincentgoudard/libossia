@@ -10,11 +10,13 @@ class OSSIA_EXPORT midi_device final : public ossia::net::device_base,
 {
 public:
   midi_device(std::unique_ptr<ossia::net::protocol_base> prot);
+  ~midi_device();
+
+  //! Create a default MIDI tree with all the nodes available
+  bool create_full_tree();
 
   using midi_node::get_name;
   node_base& set_name(std::string n) override;
-
-  bool update_namespace();
 
   const ossia::net::node_base& get_root_node() const override
   {
